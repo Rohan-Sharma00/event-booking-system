@@ -1,404 +1,307 @@
-# Event Booking System – Design Document
+# Event Booking System – Backend
 
-## 1. Introduction
+## Overview
 
-This document describes the system design, architecture, entities, API structure, and security considerations for the **Event Booking System Backend**.
+This project implements backend APIs for an **Event Booking System** where:
 
-The goal of this design is to build a **production-ready backend service** with:
+- **Event Organizers** can create and manage events
+- **Customers** can browse events and book tickets
 
-- Modular architecture
-- Role-based access control
-- Secure authentication
-- Scalable background job processing
-- Clean separation of responsibilities
+The system enforces **role-based access control**, uses **JWT authentication**, securely stores passwords using **bcrypt hashing**, and processes certain tasks asynchronously using **background jobs**.
 
-The backend follows a **layered architecture** and uses modern backend best practices.
+The goal of this project is to demonstrate a **production-style backend architecture** including modular design, environment-based configuration, secure authentication, and asynchronous task processing.
 
 ---
 
-# 2. System Architecture
+# Scope of the Project
 
-The backend follows a **modular layered architecture**:
+The system supports two primary roles.
 
-```
-Client → Routes → Controllers → Services → Models → Database
-```
+## Event Organizer
 
-### Layer Responsibilities
+Event organizers manage events on the platform.
 
-**Routes**
-- Define API endpoints
-- Apply middleware such as authentication and rate limiting
+Capabilities:
 
-**Controllers**
-- Handle HTTP request and response
-- Validate input data
-- Call service layer
-
-**Services**
-- Contains business logic
-- Handles data processing
-- Interacts with database models
-
-**Models**
-- Define database schemas
-- Manage database operations
+- Create events
+- Update event details
+- Delete events
+- View events created by them
 
 ---
 
-# 3. High Level Flow
+## Customer
 
-### User Registration
+Customers interact with events and book tickets.
 
-```
-Client
-   │
-   ▼
-POST /auth/register
-   │
-   ▼
-Controller
-   │
-   ▼
-Service
-   │
-   ▼
-Hash Password (bcrypt)
-   │
-   ▼
-Store User in DB
-```
+Capabilities:
+
+- Browse available events
+- View event details
+- Book tickets
+- View their bookings
+
+The system also performs background tasks to simulate notifications.
 
 ---
 
-### Event Booking Flow
+# Functional Requirements
+
+## Authentication
+
+The system supports:
+
+- User registration
+- User login
+- Password hashing using **bcrypt**
+- JWT based authentication
+
+Each user has a role:
 
 ```
-Customer
-   │
-   ▼
-POST /customer/book
-   │
-   ▼
-Controller
-   │
-   ▼
-Check ticket availability
-   │
-   ▼
-Create booking
-   │
-   ▼
-Update available tickets
-   │
-   ▼
-Push job to queue
-   │
-   ▼
-Worker sends booking confirmation
-```
-
----
-
-# 4. Entities and Database Design
-
-The system consists of three main entities.
-
----
-
-# 4.1 User Entity
-
-Represents both **Organizers and Customers**.
-
-### Fields
-
-| Field | Type | Description |
-|-----|-----|-------------|
-| id | ObjectId | Unique identifier |
-| name | String | User full name |
-| email | String | Unique email |
-| password | String | Hashed password |
-| role | Enum | CUSTOMER or ORGANIZER |
-| createdAt | Date | Account creation time |
-| updatedAt | Date | Last update time |
-
-### Security
-
-Passwords are hashed using **bcrypt** with:
-
-```
-saltRounds = 10
-```
-
----
-
-# 4.2 Event Entity
-
-Represents events created by organizers.
-
-### Fields
-
-| Field | Type | Description |
-|-----|-----|-------------|
-| id | ObjectId | Event identifier |
-| title | String | Event name |
-| description | String | Event details |
-| location | String | Event location |
-| date | Date | Event date |
-| totalTickets | Number | Total tickets available |
-| availableTickets | Number | Remaining tickets |
-| organizerId | ObjectId | Event creator |
-| createdAt | Date | Creation timestamp |
-
----
-
-# 4.3 Booking Entity
-
-Represents ticket bookings made by customers.
-
-### Fields
-
-| Field | Type | Description |
-|-----|-----|-------------|
-| id | ObjectId | Booking identifier |
-| eventId | ObjectId | Booked event |
-| customerId | ObjectId | Customer reference |
-| ticketCount | Number | Number of tickets booked |
-| bookingDate | Date | Booking timestamp |
-
----
-
-# 5. Authentication and Security
-
-The system uses **JWT-based authentication**.
-
-### Token Strategy
-
-JWT tokens are issued after successful login.
-
-### Cookie Configuration
-
-Tokens are stored in secure cookies:
-
-```
-httpOnly: true
-secure: true (in production)
-sameSite: strict
-```
-
-### Token Expiry
-
-```
-JWT_EXPIRES_IN = 1d
-```
-
----
-
-# 6. Password Security
-
-Passwords are stored using **bcrypt hashing**.
-
-```
-bcrypt.hash(password, 10)
-```
-
-Benefits:
-
-- Prevents plaintext password storage
-- Resistant to brute-force attacks
-
----
-
-# 7. Role-Based Access Control
-
-The system implements **RBAC** using middleware.
-
-### Roles
-
-```
-CUSTOMER
 ORGANIZER
+CUSTOMER
 ```
 
-### Authorization Rules
-
-| API | Customer | Organizer |
-|-----|----------|-----------|
-| Create Event | ❌ | ✅ |
-| Update Event | ❌ | ✅ |
-| Delete Event | ❌ | ✅ |
-| Browse Events | ✅ | ✅ |
-| Book Ticket | ✅ | ❌ |
+Access to APIs is controlled using **role-based authorization middleware**.
 
 ---
 
-# 8. API Design
+# Event Management
+
+Event organizers can:
+
+- Create events
+- Update event details
+- Delete events
+- View events created by them
+
+Event fields include:
+
+- Event name
+- Description
+- Location
+- Date and time
+- Total ticket count
+- Available tickets
+- Organizer ID
+
+---
+
+# Event Browsing
+
+Customers can:
+
+- Retrieve all available events
+- View event details
+
+Only events with **available tickets** are returned.
+
+---
+
+# Ticket Booking
+
+Customers can book tickets for events.
+
+### Booking Flow
+
+1. Customer selects an event  
+2. Specifies the number of tickets  
+3. System validates ticket availability  
+4. Booking is created  
+5. Available tickets are reduced  
+6. Background booking confirmation task is triggered  
+
+To prevent **overselling**, ticket booking uses **atomic database updates**.
+
+---
+
+# Background Tasks
+
+The system performs asynchronous background tasks to simulate notification systems.
+
+These tasks run **without blocking API responses**.
+
+---
+
+## Background Task 1 – Booking Confirmation
+
+Triggered when a customer successfully books tickets.
+
+Purpose:
+
+Simulate sending a booking confirmation email.
+
+Example console output:
+
+```
+Booking confirmation email sent to customer@example.com
+Event: Tech Conference
+Tickets: 2
+```
+
+---
+
+## Background Task 2 – Event Update Notification
+
+Triggered when an organizer updates an event.
+
+Purpose:
+
+Notify customers who booked tickets for that event.
+
+Example console output:
+
+```
+Notification sent to customer@example.com for event update
+Event: Tech Conference
+```
+
+---
+
+# API Endpoints
 
 ## Authentication APIs
 
-### Register
-
 ```
 POST /api/auth/register
-```
-
-Body:
-
-```
-{
-  "name": "Rohan",
-  "email": "rohan@example.com",
-  "password": "password",
-  "role": "CUSTOMER"
-}
-```
-
----
-
-### Login
-
-```
 POST /api/auth/login
 ```
 
-Response:
+---
+
+## Organizer APIs
 
 ```
-JWT Token stored in HTTPOnly cookie
+POST   /api/events
+GET    /api/events
+PUT    /api/events/:eventId
+DELETE /api/events/:eventId
 ```
 
 ---
 
-## Event APIs
-
-### Create Event
+## Customer APIs
 
 ```
-POST /api/events
-```
-
-Organizer only.
-
----
-
-### Update Event
-
-```
-PUT /api/events/:id
-```
-
-Triggers **event update notification job**.
-
----
-
-### Delete Event
-
-```
-DELETE /api/events/:id
-```
-
-Organizer only.
-
----
-
-### Get All Events
-
-```
-GET /api/events
-```
-
-Public endpoint.
-
----
-
-## Booking APIs
-
-### Book Tickets
-
-```
+GET  /api/customer/events
 POST /api/customer/book
-```
-
-Body:
-
-```
-{
-  "eventId": "123",
-  "ticketCount": 2
-}
-```
-
-Triggers **booking confirmation job**.
-
----
-
-### Get Customer Bookings
-
-```
-GET /api/customer/bookings
-```
-
-Returns bookings made by logged-in user.
-
----
-
-# 9. Background Job Processing
-
-Background jobs are used to avoid blocking API responses.
-
-Queue system:
-
-```
-BullMQ + Redis
+GET  /api/customer/bookings
 ```
 
 ---
 
-## Booking Confirmation Job
+# Non-Functional Requirements
 
-Triggered after booking creation.
+## Security
 
-Example output:
+- Password hashing using **bcrypt**
+- Authentication using **JWT**
+- Role-based authorization
+- HTTP-only cookies for token storage
+
+---
+
+## Scalability
+
+- Background tasks executed asynchronously
+- Modular project architecture
+
+---
+
+## Performance
+
+- Optimized database queries
+- Ticket availability validation before booking
+
+---
+
+## Reliability
+
+- Atomic ticket booking prevents overselling
+
+---
+
+# System Architecture
+
+The backend follows a **layered architecture**:
 
 ```
-Booking confirmation email sent to user@example.com
+Routes → Controllers → Services → Models
+```
+
+### Routes
+Defines API endpoints and request routing.
+
+### Controllers
+Handles request validation and responses.
+
+### Services
+Contains business logic.
+
+### Models
+Defines MongoDB schemas and database structure.
+
+---
+
+# Project Structure
+
+```
+event-booking-system
+│
+├── src
+│   ├── config
+│   ├── constants
+│   ├── controllers
+│   ├── services
+│   ├── routes
+│   ├── middleware
+│   ├── models
+│   ├── jobs
+│   ├── utils
+│   └── app.js
+│
+├── logs
+├── tests
+│
+├── .env.development
+├── .env.staging
+├── .env.production
+├── .env.example
+│
+├── package.json
+└── server.js
 ```
 
 ---
 
-## Event Update Notification Job
+# Tech Stack
 
-Triggered when an event is updated.
+### Backend Framework
+- Node.js
+- Express.js
 
-Example output:
+### Database
+- MongoDB
+- Mongoose
 
-```
-Event update notification sent to 20 users
-```
+### Authentication
+- JSON Web Tokens (JWT)
 
----
+### Security
+- bcrypt password hashing
 
-# 10. Rate Limiting
+### Async Processing
+- Background job simulation using Node.js async execution
 
-To protect APIs from abuse, **rate limiting middleware** will be applied.
-
-Example configuration:
-
-```
-100 requests per 15 minutes per IP
-```
-
-Implemented using:
-
-```
-express-rate-limit
-```
+### Environment Management
+- dotenv with multiple environment configurations
 
 ---
 
-# 11. Environment Configuration
+# Environment Configuration
 
-Multiple environments are supported:
+The system supports multiple environments:
 
 ```
 development
@@ -406,79 +309,81 @@ staging
 production
 ```
 
-Example variables:
+Example `.env.example`
 
 ```
-PORT=5000
-DB_URI=mongodb://localhost:27017/event-booking
-JWT_SECRET=secret
-JWT_EXPIRES_IN=1d
-REDIS_HOST=127.0.0.1
-REDIS_PORT=6379
+ENV_NAME=development
+PORT=3333
+
+DATABASE_URL=mongodb://localhost:27017/event-booking
+
+JWT_SECRET_KEY=your_secret_key
+JWT_TOKEN_EXPIRY=1d
+
+SALT_ROUNDS=10
 ```
 
 ---
 
-# 12. Logging
+# Running the Project
 
-Application logs will be stored in:
+## Install dependencies
 
 ```
-/logs
+npm install
 ```
 
-Logging includes:
+## Run development server
 
-- API requests
-- errors
-- background job execution
+```
+npm run dev
+```
 
----
+## Run production server
 
-# 13. Error Handling
-
-Centralized error handling middleware will be used.
-
-Responsibilities:
-
-- Handle application errors
-- Return consistent API responses
-- Prevent stack traces from leaking in production
+```
+npm run prod
+```
 
 ---
 
-# 14. Scalability Considerations
+# Design Decisions
 
-The system is designed for scalability:
+Key design decisions taken in this project:
 
-- Stateless APIs
-- Queue-based background jobs
-- Modular architecture
-- Environment-based configuration
+1. Modular architecture to separate concerns  
+2. Role-based middleware for secure access control  
+3. Asynchronous background jobs to avoid blocking API responses  
+4. Environment-based configuration for deployment flexibility  
+5. Atomic ticket booking to prevent race conditions  
 
 ---
 
-# 15. Future Enhancements
+# Future Improvements
 
-Possible improvements:
+Possible enhancements include:
 
-- Payment integration
-- Email service integration
+- Payment gateway integration
+- Email notification service
 - Event search and filtering
-- Ticket cancellation
-- Admin dashboard
-- API documentation with Swagger
+- Ticket cancellation and refunds
+- Rate limiting and API security
+- API documentation using Swagger
 
 ---
 
-# 16. Summary
+# Demo Video
 
-This backend system demonstrates a **production-grade API architecture** with:
+A short demo video (3–4 minutes) demonstrates:
 
-- Secure authentication
-- Role-based access control
-- Background job processing
-- Modular project structure
-- Environment-based configuration
+- User registration and login
+- Event creation
+- Event browsing
+- Ticket booking
+- Background job execution
 
-The design ensures maintainability, scalability, and security.
+---
+
+# Author
+
+**Rohan Sharma**

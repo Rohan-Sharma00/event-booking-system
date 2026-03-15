@@ -1,11 +1,15 @@
 # Event Booking System – Backend
 
 ## Overview
-This project implements the backend APIs for an **Event Booking System** that allows **Event Organizers** to manage events and **Customers** to browse and book tickets.
 
-The system enforces **role-based access control**, uses **JWT authentication**, securely stores passwords using **bcrypt hashing**, and processes certain tasks asynchronously using a **background job queue**.
+This project implements backend APIs for an **Event Booking System** where:
 
-The goal of this project is to demonstrate a **production-style backend architecture** including modular design, environment-based configuration, and scalable background processing.
+- **Event Organizers** can create and manage events
+- **Customers** can browse events and book tickets
+
+The system enforces **role-based access control**, uses **JWT authentication**, securely stores passwords using **bcrypt hashing**, and processes certain tasks asynchronously using **background jobs**.
+
+The goal of this project is to demonstrate a **production-style backend architecture** including modular design, environment-based configuration, secure authentication, and asynchronous task processing.
 
 ---
 
@@ -14,57 +18,67 @@ The goal of this project is to demonstrate a **production-style backend architec
 The system supports two primary roles.
 
 ## Event Organizer
-Event organizers are responsible for managing events on the platform.
+
+Event organizers manage events on the platform.
 
 Capabilities:
+
 - Create events
 - Update event details
 - Delete events
-- View bookings for their events
+- View events created by them
+
+---
 
 ## Customer
+
 Customers interact with events and book tickets.
 
 Capabilities:
+
 - Browse available events
 - View event details
 - Book tickets
 - View their bookings
 
-The system also performs background tasks to simulate email notifications and event updates.
+The system also performs background tasks to simulate notifications.
 
 ---
 
 # Functional Requirements
 
 ## Authentication
-The system must support:
+
+The system supports:
 
 - User registration
 - User login
-- Secure password hashing
-- JWT-based authentication
+- Password hashing using **bcrypt**
+- JWT based authentication
 
-Each user is assigned a role:
+Each user has a role:
 
-- ORGANIZER
-- CUSTOMER
+```
+ORGANIZER
+CUSTOMER
+```
 
 Access to APIs is controlled using **role-based authorization middleware**.
 
 ---
 
-## Event Management
-Event organizers can perform the following actions:
+# Event Management
+
+Event organizers can:
 
 - Create events
 - Update event details
 - Delete events
-- View their events
+- View events created by them
 
 Event fields include:
 
-- Event title
+- Event name
 - Description
 - Location
 - Date and time
@@ -74,48 +88,51 @@ Event fields include:
 
 ---
 
-## Event Browsing
+# Event Browsing
+
 Customers can:
 
 - Retrieve all available events
 - View event details
 
-Filtering can be applied by:
-
-- Date
-- Location
+Only events with **available tickets** are returned.
 
 ---
 
-## Ticket Booking
+# Ticket Booking
 
-Customers can book tickets for available events.
+Customers can book tickets for events.
 
 ### Booking Flow
 
-1. Customer selects an event
-2. Specifies the number of tickets
-3. System checks ticket availability
-4. Booking is created
-5. Available tickets are reduced
-6. Booking confirmation background job is triggered
+1. Customer selects an event  
+2. Specifies the number of tickets  
+3. System validates ticket availability  
+4. Booking is created  
+5. Available tickets are reduced  
+6. Background booking confirmation task is triggered  
+
+To prevent **overselling**, ticket booking uses **atomic database updates**.
 
 ---
 
 # Background Tasks
 
-The system processes certain operations asynchronously.
+The system performs asynchronous background tasks to simulate notification systems.
 
-## Booking Confirmation Task
+These tasks run **without blocking API responses**.
 
-Triggered when a booking is successfully created.
+---
+
+## Background Task 1 – Booking Confirmation
+
+Triggered when a customer successfully books tickets.
 
 Purpose:
-Simulate sending a booking confirmation email to the customer.
 
-For this assignment, the task logs a message to the console.
+Simulate sending a booking confirmation email.
 
-Example output:
+Example console output:
 
 ```
 Booking confirmation email sent to customer@example.com
@@ -125,20 +142,51 @@ Tickets: 2
 
 ---
 
-## Event Update Notification Task
+## Background Task 2 – Event Update Notification
 
 Triggered when an organizer updates an event.
 
 Purpose:
-Notify all customers who have booked tickets for the updated event.
 
-For this assignment, the system logs a notification message.
+Notify customers who booked tickets for that event.
 
-Example output:
+Example console output:
 
 ```
-Event update notification sent to 12 customers
-Event: Tech Conference has been updated
+Notification sent to customer@example.com for event update
+Event: Tech Conference
+```
+
+---
+
+# API Endpoints
+
+## Authentication APIs
+
+```
+POST /api/auth/register
+POST /api/auth/login
+```
+
+---
+
+## Organizer APIs
+
+```
+POST   /api/events
+GET    /api/events
+PUT    /api/events/:eventId
+DELETE /api/events/:eventId
+```
+
+---
+
+## Customer APIs
+
+```
+GET  /api/customer/events
+POST /api/customer/book
+GET  /api/customer/bookings
 ```
 
 ---
@@ -146,40 +194,53 @@ Event: Tech Conference has been updated
 # Non-Functional Requirements
 
 ## Security
-- Passwords must be securely hashed
-- Authentication handled using JWT
-- Role-based authorization enforced
+
+- Password hashing using **bcrypt**
+- Authentication using **JWT**
+- Role-based authorization
+- HTTP-only cookies for token storage
+
+---
 
 ## Scalability
-- Background jobs processed asynchronously
-- API designed using modular architecture
+
+- Background tasks executed asynchronously
+- Modular project architecture
+
+---
 
 ## Performance
-- Database queries optimized using indexes
+
+- Optimized database queries
 - Ticket availability validation before booking
 
+---
+
 ## Reliability
-- Booking operations must ensure ticket count consistency
+
+- Atomic ticket booking prevents overselling
 
 ---
 
 # System Architecture
 
-The backend follows a layered architecture:
+The backend follows a **layered architecture**:
 
+```
 Routes → Controllers → Services → Models
+```
 
 ### Routes
 Defines API endpoints and request routing.
 
 ### Controllers
-Handles HTTP request and response logic.
+Handles request validation and responses.
 
 ### Services
-Contains the core business logic.
+Contains business logic.
 
 ### Models
-Defines database schemas and data structure.
+Defines MongoDB schemas and database structure.
 
 ---
 
@@ -197,7 +258,6 @@ event-booking-system
 │   ├── middleware
 │   ├── models
 │   ├── jobs
-│   ├── queues
 │   ├── utils
 │   └── app.js
 │
@@ -217,25 +277,25 @@ event-booking-system
 
 # Tech Stack
 
-Backend Framework
+### Backend Framework
 - Node.js
 - Express.js
 
-Database
+### Database
 - MongoDB
-- Mongoose ODM
+- Mongoose
 
-Authentication
+### Authentication
 - JSON Web Tokens (JWT)
 
-Security
+### Security
 - bcrypt password hashing
 
-Background Processing
-- BullMQ / Redis queue
+### Async Processing
+- Background job simulation using Node.js async execution
 
-Environment Management
-- dotenv with multiple environments
+### Environment Management
+- dotenv with multiple environment configurations
 
 ---
 
@@ -243,23 +303,24 @@ Environment Management
 
 The system supports multiple environments:
 
-- development
-- staging
-- production
+```
+development
+staging
+production
+```
 
-Example `.env.example`:
+Example `.env.example`
 
 ```
-NODE_ENV=development
-PORT=5000
+ENV_NAME=development
+PORT=3333
 
-DB_URI=mongodb://localhost:27017/event-booking
+DATABASE_URL=mongodb://localhost:27017/event-booking
 
-JWT_SECRET=your_secret_key
-JWT_EXPIRES_IN=1d
+JWT_SECRET_KEY=your_secret_key
+JWT_TOKEN_EXPIRY=1d
 
-REDIS_HOST=127.0.0.1
-REDIS_PORT=6379
+SALT_ROUNDS=10
 ```
 
 ---
@@ -288,25 +349,25 @@ npm run prod
 
 # Design Decisions
 
-Several design decisions were made to ensure scalability and maintainability:
+Key design decisions taken in this project:
 
-1. Modular architecture to separate concerns
-2. Role-based middleware for secure access control
-3. Background job queue to avoid blocking API responses
-4. Environment-based configuration for deployment flexibility
-5. Layered architecture to maintain code readability and testability
+1. Modular architecture to separate concerns  
+2. Role-based middleware for secure access control  
+3. Asynchronous background jobs to avoid blocking API responses  
+4. Environment-based configuration for deployment flexibility  
+5. Atomic ticket booking to prevent race conditions  
 
 ---
 
 # Future Improvements
 
-Possible improvements include:
+Possible enhancements include:
 
-- Payment integration
-- Email service integration
-- Rate limiting and API security
+- Payment gateway integration
+- Email notification service
 - Event search and filtering
 - Ticket cancellation and refunds
+- Rate limiting and API security
 - API documentation using Swagger
 
 ---
@@ -315,6 +376,7 @@ Possible improvements include:
 
 A short demo video (3–4 minutes) demonstrates:
 
+- User registration and login
 - Event creation
 - Event browsing
 - Ticket booking
@@ -324,4 +386,4 @@ A short demo video (3–4 minutes) demonstrates:
 
 # Author
 
-Rohan Sharma
+**Rohan Sharma**
