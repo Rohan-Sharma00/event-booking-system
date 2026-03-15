@@ -3,6 +3,8 @@ const helmet = require("helmet");
 const cookieParser = require("cookie-parser");
 const rateLimit = require("express-rate-limit");
 const cors = require("cors");
+require("./jobs/bookingEmail.job");
+require("./jobs/eventUpdateNotification.job");
 
 const { connectDB } = require("./config/db");
 const routes = require("./routes");
