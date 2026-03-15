@@ -1,16 +1,17 @@
 const express = require("express");
-
 const router = express.Router();
 
-const CustomerController = require("../../controllers/customer/customer.controller");
+const { authMiddleware } = require("../../middleware/auth.middleware");
+const { roleMiddleware } = require("../../middleware/role.middleware");
 
-// Browse events
-router.get("/events", CustomerController.getEvents);
+const {
+  getEvents,
+  bookTicket,
+  getBookings
+} = require("../../controllers/customer/customer.controller");
 
-// Book ticket
-router.post("/book", CustomerController.bookTicket);
-
-// Customer bookings
-router.get("/bookings", CustomerController.getBookings);
+router.get("/events", authMiddleware, roleMiddleware("CUSTOMER"), getEvents);
+router.post("/book", authMiddleware, roleMiddleware("CUSTOMER"), bookTicket);
+router.get("/bookings", authMiddleware, roleMiddleware("CUSTOMER"), getBookings);
 
 module.exports = router;
