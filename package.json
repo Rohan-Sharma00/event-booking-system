@@ -2,8 +2,15 @@
   "name": "event-booking-system",
   "version": "1.0.0",
   "description": "The Event Booking System allows Event Organizers to create and manage events, and Customers to browse events and book tickets.",
-  "main": "index.js",
+  "main": "server.js",
+  "type": "commonjs",
   "scripts": {
+    "start": "node server.js",
+    "dev": "ENV_NAME=development nodemon server.js",
+    "staging": "ENV_NAME=staging nodemon server.js",
+    "prod": "ENV_NAME=production node server.js",
+    "dev:watch": "ENV_NAME=development nodemon --watch src server.js",
+    "lint": "echo \"Add ESLint later\"",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
@@ -13,7 +20,6 @@
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "type": "commonjs",
   "bugs": {
     "url": "https://github.com/Rohan-Sharma00/event-booking-system/issues"
   },
