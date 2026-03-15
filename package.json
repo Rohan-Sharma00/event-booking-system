@@ -1,0 +1,34 @@
+{
+  "name": "event-booking-system",
+  "version": "1.0.0",
+  "description": "The Event Booking System allows Event Organizers to create and manage events, and Customers to browse events and book tickets.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Rohan-Sharma00/event-booking-system.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/Rohan-Sharma00/event-booking-system/issues"
+  },
+  "homepage": "https://github.com/Rohan-Sharma00/event-booking-system#readme",
+  "dependencies": {
+    "bcryptjs": "^3.0.3",
+    "bullmq": "^5.71.0",
+    "cors": "^2.8.6",
+    "dotenv": "^17.3.1",
+    "express": "^5.2.1",
+    "ioredis": "^5.10.0",
+    "jsonwebtoken": "^9.0.3",
+    "mongoose": "^9.3.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.14"
+  }
+}
